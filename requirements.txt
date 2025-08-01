@@ -7,4 +7,3 @@ rapidfuzz==3.10.0
 passlib==1.7.4
 argon2-cffi==23.1.0
 cython==0.29.36
-

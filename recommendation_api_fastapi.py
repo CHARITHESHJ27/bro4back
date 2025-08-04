@@ -252,10 +252,10 @@ app = FastAPI(title="WYMI Recommendation API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Or replace with your frontend domain for security
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["X-API-Key", "Content-Type"],
+    allow_methods=["*"],
+    allow_headers=["*"],  # ← FIXED: allow all headers
 )
 
 API_KEY = "wymi-secret-key"

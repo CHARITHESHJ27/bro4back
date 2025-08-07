@@ -1,7 +1,7 @@
 import psycopg2
 import pandas as pd
 import numpy as np
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends,Request
 from fastapi.security import APIKeyHeader
 from fastapi.responses import RedirectResponse
 from contextlib import asynccontextmanager
@@ -16,6 +16,26 @@ from psycopg2.extras import execute_values
 import re
 import os
 from urllib.parse import urlparse
+
+
+
+from sqlalchemy.orm import Session
+from db import get_db
+
+from sqlalchemy.sql import text
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+
+
+
+
+
+
+
+
+
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -41,7 +61,6 @@ else:
         'port': '5432'
     }
 
-
  #db_params = {
   #  'dbname': 'deal',
    # 'user': 'postgres',
@@ -49,6 +68,8 @@ else:
     #'host': 'localhost',
     #'port': '5432'
 #}
+
+
 
 user_factors = None
 item_factors = None
@@ -265,6 +286,33 @@ def verify_api_key(api_key: str = Depends(api_key_header)):
     if api_key and api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API key")
     return api_key
+
+
+#event tracking class define
+class EventLog(BaseModel):
+    user_id: str
+    event_type: str
+    element: Optional[str] = None
+    scroll_position: Optional[int] = None
+    page_url: Optional[str] = None
+    timestamp: Optional[datetime] = None
+
+@app.post("/track_event")
+async def track_event(event: EventLog, db: Session = Depends(get_db)):
+    query = text("""
+        INSERT INTO user_event_log (user_id, event_type, element, scroll_position, page_url, timestamp)
+        VALUES (:user_id, :event_type, :element, :scroll_position, :page_url, :timestamp)
+    """)
+    db.execute(query, {
+        "user_id": event.user_id,
+        "event_type": event.event_type,
+        "element": event.element,
+        "scroll_position": event.scroll_position,
+        "page_url": event.page_url,
+        "timestamp": event.timestamp or datetime.utcnow()
+    })
+    db.commit()
+    return {"status": "logged"}
 
 class Recommendation(BaseModel):
     product_id: int
@@ -945,6 +993,7 @@ async def login(login: LoginRequest, api_key: str = Depends(verify_api_key)):
 @app.get("/health", response_model=dict)
 async def health_check():
     return {"status": "API running"}
+
 
 if __name__ == '__main__':
     logger.info("Starting server: http://localhost:8000/docs")

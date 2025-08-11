@@ -297,7 +297,7 @@ class EventLog(BaseModel):
     page_url: Optional[str] = None
     timestamp: Optional[datetime] = None
 
-@app.post("/track_event")
+@app.get("/track_event")
 async def track_event(event: EventLog, db: Session = Depends(get_db)):
     query = text("""
         INSERT INTO user_event_log (user_id, event_type, element, scroll_position, page_url, timestamp)
